@@ -14,23 +14,29 @@ import helium314.keyboard.latin.SuggestedWords.SuggestedWordInfo
 object ShellSuggestions {
     const val MAX_SUGGESTIONS = 3
 
+    /**
+     * The bundled list is a cold-start prior; history is personal evidence. Both are put on one
+     * scale so a command used a handful of times outranks a generic entry, while a single recent
+     * run does not bury the obvious completion (`gi` should still offer `git status`).
+     */
+    private const val STATIC_WEIGHT_SCALE = 0.5
+
     fun forLine(line: String): List<String> {
         if (line.isEmpty() || !ShellLine.isTrusted) return emptyList()
-        val result = LinkedHashSet<String>(MAX_SUGGESTIONS)
-        // History first: frecency beats any static prior.
-        for (entry in HistoryStore.suggest(line, MAX_SUGGESTIONS)) result.add(entry.text)
-        if (result.size < MAX_SUGGESTIONS) {
-            StaticCommands.entries
-                .filter { it.text.length > line.length && it.text.startsWith(line) && it.text !in result }
-                .sortedWith(
-                    compareByDescending<StaticCommands.Entry> { it.weight }
-                        .thenBy { it.text.length }
-                        .thenBy { it.text }
-                )
-                .take(MAX_SUGGESTIONS - result.size)
-                .forEach { result.add(it.text) }
+        val scored = LinkedHashMap<String, Double>()
+        for ((entry, score) in HistoryStore.suggestScored(line, MAX_SUGGESTIONS * 2)) {
+            scored[entry.text] = score
         }
-        return result.toList()
+        for (entry in StaticCommands.entries) {
+            if (entry.text.length <= line.length || !entry.text.startsWith(line)) continue
+            val score = entry.weight * STATIC_WEIGHT_SCALE
+            val existing = scored[entry.text]
+            if (existing == null || score > existing) scored[entry.text] = score
+        }
+        return scored.entries
+            .sortedWith(compareByDescending<Map.Entry<String, Double>> { it.value }.thenBy { it.key })
+            .take(MAX_SUGGESTIONS)
+            .map { it.key }
     }
 
     /**

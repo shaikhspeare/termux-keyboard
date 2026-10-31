@@ -29,6 +29,9 @@ object HistoryStore {
     fun suggest(line: String, limit: Int): List<HistoryEntry> =
         index.suggest(line, limit, System.currentTimeMillis() / 1000)
 
+    fun suggestScored(line: String, limit: Int): List<Pair<HistoryEntry, Double>> =
+        index.suggestScored(line, limit, System.currentTimeMillis() / 1000)
+
     /** Imports a history file, merging with whatever was already imported. */
     fun importFrom(context: Context, uri: Uri) {
         val raw = context.contentResolver.openInputStream(uri)?.use { stream ->

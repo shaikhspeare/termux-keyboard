@@ -48,12 +48,16 @@ Full reasoning: `docs/prior-art.md` §4, `docs/spikes.md`, `docs/decisions.md`.
   with a space, empties and >512-char lines; dedupes with `(count, lastUsed)`.
 - `HistoryIndex`: sorted array + binary search on the line prefix, frecency ranking
   (`count × age bucket`), ties resolved alphabetically.
+- Ranking blends both sources on one scale: history `count × decay` vs `static weight × 0.5`, so a
+  command used a handful of times outranks a generic prior without a single recent run burying
+  `git status` (also keeps the strip at three chips instead of collapsing on one long entry).
 - `HistoryStore`: persists only the parsed, redacted entries (TSV in app-private storage), never the
   raw file; import merges with what is already there; clear wipes it.
 - Settings → Terminal mode → *Import history file* (SAF picker) and *Clear imported history*.
 - Unit tests: `app/src/test/java/helium314/keyboard/terminal/HistoryTest.kt` (10 tests, green).
-- Device check: seeded 3 `kubectl …` entries, typed `ku` → `kubectl get pods -n prod` offered and
-  accepted; only the suffix left the keyboard.
+- Device check: typed `ku` → `kubectl get pods -n prod` offered and accepted; imported a real
+  `bash_history` file through the SAF picker (Downloads → bash_history) and typed `git re` →
+  `git rebase -i HEAD~3` offered from the import. Only the suffix leaves the keyboard in both cases.
 
 Known limitations (all documented in `docs/spikes.md`):
 - long commands collapse the strip to one chip plus the "…" more-suggestions popup (HeliBoard's

@@ -106,7 +106,10 @@ class HistoryIndex(entries: List<HistoryEntry>) {
 
     fun isEmpty(): Boolean = items.isEmpty()
 
-    fun suggest(prefix: String, limit: Int, nowSeconds: Long): List<HistoryEntry> {
+    fun suggest(prefix: String, limit: Int, nowSeconds: Long): List<HistoryEntry> =
+        suggestScored(prefix, limit, nowSeconds).map { it.first }
+
+    fun suggestScored(prefix: String, limit: Int, nowSeconds: Long): List<Pair<HistoryEntry, Double>> {
         if (prefix.isEmpty() || items.isEmpty() || limit <= 0) return emptyList()
         var i = lowerBound(prefix)
         val best = ArrayList<HistoryEntry>(limit)
@@ -129,7 +132,7 @@ class HistoryIndex(entries: List<HistoryEntry>) {
                 scores[worst] = score
             }
         }
-        return best.sortedByDescending { frecency(it, nowSeconds) }
+        return best.map { it to frecency(it, nowSeconds) }.sortedByDescending { it.second }
     }
 
     private fun lowerBound(prefix: String): Int {
