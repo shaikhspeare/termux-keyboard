@@ -16,6 +16,56 @@ Status: Phase 0 and Phase 1 are complete; Phase 2 (the fork) is gated on sign-of
 Upstream: https://github.com/HeliBorg/HeliBoard (GPL-3.0). The fork has not been created yet; that
 is part of the spec (after Phase 0).
 
+## Install (sideload)
+
+The fork installs next to HeliBoard: its `applicationId` is `org.termuxkeyboard.latin` and its
+providers are package-scoped.
+
+```sh
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/HeliBoard_4.3-beta1-debug.apk
+adb shell ime enable org.termuxkeyboard.latin.debug/helium314.keyboard.latin.LatinIME
+adb shell ime set org.termuxkeyboard.latin.debug/helium314.keyboard.latin.LatinIME
+```
+
+On a phone: Settings → System → Languages & input → On-screen keyboard → enable "Termux Keyboard",
+then pick it as the current keyboard. Android 14+ requires allowed "restricted settings" for
+sideloaded IMEs in some builds.
+
+## Terminal mode
+
+Enabled by default for `com.termux` (Settings → Terminal mode). Terminal apps and their package
+list, plus history import, live on that screen.
+
+**What it does.** Termux tells the IME "no text field" (`InputType.TYPE_NULL`), which is why no
+stock keyboard suggests anything there. Terminal mode overrides that for the configured packages,
+tracks the command line from the keys it sends, and shows prefix completions in the normal
+suggestion strip. Accepting a suggestion sends **only the missing suffix** — the terminal is never
+rewritten, so bash/zsh/fish/tmux/SSH all behave as if the user typed the characters.
+
+**Trust model.** Any key that can move the cursor or replace the line behind the keyboard's back
+marks the line untrusted: suggestions hide until Enter starts a new line. Note that Termux's own
+extra-keys row (Tab, arrows, Ctrl) is part of the terminal, not of the keyboard, so the keyboard
+cannot see those keys — press Enter to resync after using them.
+
+## History and privacy
+
+- *Settings → Terminal mode → Import history file* merges a bash, zsh or fish history file into the
+  suggestions (offline, no permissions).
+- Only parsed entries are stored, in app-private storage, and lines matching
+  `password|passwd|token|secret|api_key|AKIA|BEGIN … PRIVATE KEY` plus lines starting with a space
+  are dropped before anything is written.
+- The keyboard declares **no** `INTERNET` permission and contains no telemetry. A Termux-side helper
+  for live/remote history is planned (slice 3); it is the only feature that would need loopback
+  networking and a permission, and it will be opt-in.
+
+## Known limitations
+
+- Long commands collapse the strip to one suggestion plus the "…" popup; short ones (e.g. `git …`)
+  show three.
+- Static seed list + imported history only — no live shell history yet.
+- No terminal toolbar keys yet; Termux's own extra-keys row covers Esc/Tab/Ctrl/arrows.
+
 ## Mock server
 
 ```sh

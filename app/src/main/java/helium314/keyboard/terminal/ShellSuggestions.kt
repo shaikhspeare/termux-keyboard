@@ -16,16 +16,21 @@ object ShellSuggestions {
 
     fun forLine(line: String): List<String> {
         if (line.isEmpty() || !ShellLine.isTrusted) return emptyList()
-        val matches = ArrayList<StaticCommands.Entry>(8)
-        for (entry in StaticCommands.entries) {
-            if (entry.text.length > line.length && entry.text.startsWith(line)) matches.add(entry)
+        val result = LinkedHashSet<String>(MAX_SUGGESTIONS)
+        // History first: frecency beats any static prior.
+        for (entry in HistoryStore.suggest(line, MAX_SUGGESTIONS)) result.add(entry.text)
+        if (result.size < MAX_SUGGESTIONS) {
+            StaticCommands.entries
+                .filter { it.text.length > line.length && it.text.startsWith(line) && it.text !in result }
+                .sortedWith(
+                    compareByDescending<StaticCommands.Entry> { it.weight }
+                        .thenBy { it.text.length }
+                        .thenBy { it.text }
+                )
+                .take(MAX_SUGGESTIONS - result.size)
+                .forEach { result.add(it.text) }
         }
-        matches.sortWith(
-            compareByDescending<StaticCommands.Entry> { it.weight }
-                .thenBy { it.text.length }
-                .thenBy { it.text }
-        )
-        return matches.take(MAX_SUGGESTIONS).map { it.text }
+        return result.toList()
     }
 
     /**

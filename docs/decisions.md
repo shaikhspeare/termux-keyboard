@@ -189,3 +189,24 @@ Tailscale (`tailscale serve` or Taildrop).**
   installed.
 - The keystore never enters git; the debug build is only for local device tests.
 - README documents the Android 14+ "restricted settings" step for sideloaded IMEs.
+
+
+---
+
+## ADR-010 — History ingestion (slice 2)
+
+**Context.** Live shell history needs a Termux-side helper, which needs `INTERNET` for loopback
+(ADR-005). Shipping nothing until the helper exists would leave the keyboard with only the static
+list.
+
+**Options.** Wait for the helper · ship manual import only · ship both at once.
+
+**Choice. Ship manual import first (SAF file pick, bash/zsh/fish parsers, frecency index); feed the
+same ingestion path from the helper in slice 3.**
+
+**Consequences.**
+- Useful today with zero permissions and no daemon; the spec also asks for manual import as the
+  permanent baseline.
+- Only parsed, redacted entries are persisted (TSV), never the raw history file.
+- The parser is one Kotlin implementation, unit-tested; the helper will hand it raw text.
+- Cost: no freshness — the user re-imports when they want newer history.

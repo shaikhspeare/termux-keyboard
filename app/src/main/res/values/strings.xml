@@ -1326,6 +1326,12 @@ New dictionary:
     <string name="terminal_mode_summary">Suggest commands while typing in a terminal app. Termux gives the keyboard no editable text, so the line is tracked from the keys you press.</string>
     <string name="terminal_packages">Terminal packages</string>
     <string name="terminal_packages_summary">Comma separated package names that get shell suggestions</string>
+    <string name="terminal_import_history">Import history file</string>
+    <string name="terminal_import_history_summary">Merge a bash, zsh or fish history file into the suggestions</string>
+    <string name="terminal_clear_history">Clear imported history</string>
+    <string name="terminal_clear_history_summary">Delete every command imported into this keyboard</string>
+    <string name="terminal_history_imported">%d commands available offline</string>
+    <string name="terminal_history_cleared">Imported history cleared</string>
 
     <!-- new strings should go above the section for gesture data gathering -->
 </resources>

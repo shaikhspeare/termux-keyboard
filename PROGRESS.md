@@ -7,7 +7,7 @@ Agent: update this file at the end of every work session. Keep it short.
 - [x] Phase 1 — spikes S1–S8 (`docs/spikes.md`)
 - [x] User sign-off on approach (2026-10-31: "ok build it")
 - [x] Slice 1 — terminal mode + static commands
-- [ ] Slice 2 — local history
+- [x] Slice 2 — local history (manual import path; Termux helper not yet)
 - [ ] Slice 3 — remote history over SSH
 - [ ] Slice 4 — quality
 - [ ] Slice 5 — CI + Tailscale distribution
@@ -40,6 +40,26 @@ Full reasoning: `docs/prior-art.md` §4, `docs/spikes.md`, `docs/decisions.md`.
   resets; backspace deletes one char; whole line stays exactly in sync with the terminal.
 - Known gap: Termux's own extra-keys row (Tab/arrows/ESC) bypasses the IME, so those keys can stale
   the buffer. Enter and app switches reset it. Fix belongs to slice 4 (own toolbar keys).
+
+## Slice 2 — history (verified on the API 35 emulator)
+
+- `HistoryFormat` parses bash (`#ts`), zsh extended (`: ts:dur;cmd`), fish (`- cmd:` / `when:`) and
+  `\` continuations; drops redacted lines (password/token/secret/AKIA/private key), lines starting
+  with a space, empties and >512-char lines; dedupes with `(count, lastUsed)`.
+- `HistoryIndex`: sorted array + binary search on the line prefix, frecency ranking
+  (`count × age bucket`), ties resolved alphabetically.
+- `HistoryStore`: persists only the parsed, redacted entries (TSV in app-private storage), never the
+  raw file; import merges with what is already there; clear wipes it.
+- Settings → Terminal mode → *Import history file* (SAF picker) and *Clear imported history*.
+- Unit tests: `app/src/test/java/helium314/keyboard/terminal/HistoryTest.kt` (10 tests, green).
+- Device check: seeded 3 `kubectl …` entries, typed `ku` → `kubectl get pods -n prod` offered and
+  accepted; only the suffix left the keyboard.
+
+Known limitations (all documented in `docs/spikes.md`):
+- long commands collapse the strip to one chip plus the "…" more-suggestions popup (HeliBoard's
+  layout gives up at < 70 % text scale);
+- Termux's own extra-keys row bypasses the IME, so Tab/arrows can stale the line;
+- there is no Termux-side helper yet, so history is whatever the user imports.
 
 ## Open questions for the user
 1. Phone model + Android version (for the on-device matrix and the Android 14+ sideload

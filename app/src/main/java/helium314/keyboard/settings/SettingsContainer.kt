@@ -79,6 +79,8 @@ object SettingsWithoutKey {
     const val COMMUNITY_LINKS = "community_links"
     const val SAVE_LOG = "save_log"
     const val BACKUP_RESTORE = "backup_restore"
+    const val IMPORT_HISTORY = "import_history"
+    const val CLEAR_HISTORY = "clear_history"
     const val DEBUG_SETTINGS = "screen_debug"
     const val LOAD_GESTURE_LIB = "load_gesture_library"
     const val BACKGROUND_IMAGE = "background_image"

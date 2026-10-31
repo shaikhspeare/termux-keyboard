@@ -31,6 +31,7 @@ object TerminalMode : SharedPreferences.OnSharedPreferenceChangeListener {
     fun init(context: Context) {
         val prefs = context.prefs()
         prefs.registerOnSharedPreferenceChangeListener(this)
+        HistoryStore.init(context)
         reload(prefs)
     }
 
