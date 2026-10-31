@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.probe.ime">
+
+    <application
+        android:label="ProbeIME"
+        android:debuggable="true">
+
+        <service
+            android:name=".ProbeIME"
+            android:label="ProbeIME"
+            android:exported="true"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
+        <receiver
+            android:name=".ProbeIME$ProbeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="dev.probe.ime.CMD" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

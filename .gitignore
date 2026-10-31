@@ -15,3 +15,10 @@ tools/*.txt
 *.patch
 *.diff
 *.sh
+!devtools/probe-ime/build.sh
+
+# termux-keyboard
+devtools/probe-ime/build/
+*.jks
+*.keystore
+*.log

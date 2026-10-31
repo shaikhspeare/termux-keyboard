@@ -58,6 +58,21 @@ public final class InputAttributes {
         final int inputClass = mInputType & InputType.TYPE_MASK_CLASS;
         mIsPasswordField = InputTypeUtils.isPasswordInputType(mInputType)
                 || InputTypeUtils.isVisiblePasswordInputType(mInputType);
+        if (helium314.keyboard.terminal.TerminalMode.INSTANCE.appliesTo(mTargetApplicationPackageName)) {
+            // Terminal mode: the app (Termux) reports input class 0 and exposes no editable text.
+            // Suggestions come from the line we track ourselves, so force the strip on and keep
+            // every word-level behaviour off.
+            mShouldShowSuggestions = true;
+            mMayOverrideShowingSuggestions = true;
+            mInputTypeShouldAutoCorrect = false;
+            mShouldInsertSpacesAutomatically = false;
+            mShouldShowVoiceInputKey = false;
+            mDisableGestureFloatingPreviewText = true;
+            mIsGeneralTextInput = false;
+            mApplicationSpecifiedCompletionOn = false;
+            mNoLearning = true;
+            return;
+        }
         if (inputClass != InputType.TYPE_CLASS_TEXT) {
             // If we are not looking at a TYPE_CLASS_TEXT field, the following strange
             // cases may arise, so we do a couple sanity checks for them. If it's a

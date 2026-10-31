@@ -40,6 +40,8 @@ import helium314.keyboard.keyboard.emoji.EmojiSearchActivity;
 import helium314.keyboard.keyboard.emoji.EmojiSearchActivityKt;
 import helium314.keyboard.keyboard.internal.KeyboardIconsSet;
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode;
+import helium314.keyboard.terminal.TerminalInputHandler;
+import helium314.keyboard.terminal.TerminalMode;
 import helium314.keyboard.latin.common.InsetsOutlineProvider;
 import helium314.keyboard.event.Event;
 import helium314.keyboard.event.InputTransaction;
@@ -119,6 +121,7 @@ public class LatinIME extends InputMethodService implements
             DictionaryFacilitatorProvider.getDictionaryFacilitator(false);
     private final DictionaryFacilitator mOriginalDictionaryFacilitator = mDictionaryFacilitator;
     final InputLogic mInputLogic = new InputLogic(this, this, mDictionaryFacilitator);
+    private TerminalInputHandler mTerminalInputHandler;
 
     // TODO: Move these {@link View}s to {@link KeyboardSwitcher}.
     private View mInputView;
@@ -502,6 +505,8 @@ public class LatinIME extends InputMethodService implements
         mStatsUtilsManager.onCreate(this, mDictionaryFacilitator);
         mDisplayContext = KtxKt.getDisplayContext(this);
         KeyboardSwitcher.init(this);
+        TerminalMode.INSTANCE.init(this);
+        mTerminalInputHandler = new TerminalInputHandler(this, mInputLogic.mConnection);
         super.onCreate();
 
         loadSettings();
@@ -723,6 +728,7 @@ public class LatinIME extends InputMethodService implements
 
     @Override
     public void onFinishInput() {
+        TerminalMode.INSTANCE.onInputFinish();
         mHandler.onFinishInput();
         BackgroundGatheringCache.saveOrClear(this);
     }
@@ -763,6 +769,8 @@ public class LatinIME extends InputMethodService implements
 
     private void onStartInputInternal(EditorInfo editorInfo, boolean restarting) {
         super.onStartInput(editorInfo, restarting);
+        TerminalMode.INSTANCE.onInputStart(editorInfo == null ? null : editorInfo.packageName,
+                editorInfo == null ? 0 : editorInfo.inputType);
 
         RichInputMethodSubtype subtypeForApp = editorInfo == null
             ? null :
@@ -925,6 +933,10 @@ public class LatinIME extends InputMethodService implements
                 currentSettingsValues.mGestureFloatingPreviewTextEnabled);
 
         if (TRACE) Debug.startMethodTracing("/data/trace/latinime");
+
+        if (TerminalMode.INSTANCE.isActive()) {
+            mTerminalInputHandler.refresh();
+        }
     }
 
     @Override
@@ -1341,6 +1353,12 @@ public class LatinIME extends InputMethodService implements
         if (KeyCode.VOICE_INPUT == event.getKeyCode()) {
             mRichImm.switchToShortcutIme(this);
         }
+        if (mTerminalInputHandler.handle(event)) {
+            // Terminal mode sent the bytes itself; only the keyboard's own shift/symbol state
+            // still has to follow the event.
+            mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState(), getCurrentRecapitalizeState());
+            return;
+        }
         InputTransaction completeInputTransaction =
                 mInputLogic.onCodeInput(mSettings.getCurrent(), event, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);
@@ -1348,7 +1366,7 @@ public class LatinIME extends InputMethodService implements
     }
 
     public void onTextInput(@Nullable String rawText) {
-        if (rawText == null) return;
+        if (rawText == null || mTerminalInputHandler.handleText(rawText)) return;
         // TODO: have the keyboard pass the correct key code when we need it.
         Event event = Event.createSoftwareTextEvent(rawText, KeyCode.MULTIPLE_CODE_POINTS, null);
         InputTransaction completeInputTransaction = mInputLogic.onTextInput(mSettings.getCurrent(),
@@ -1461,6 +1479,10 @@ public class LatinIME extends InputMethodService implements
     // interface
     @Override
     public void pickSuggestionManually(SuggestedWordInfo suggestionInfo) {
+        if (TerminalMode.INSTANCE.isActive()) {
+            mTerminalInputHandler.acceptSuggestion(suggestionInfo.mWord);
+            return;
+        }
         InputTransaction completeInputTransaction = mInputLogic.onPickSuggestionManually(
                 mSettings.getCurrent(), suggestionInfo, mKeyboardSwitcher.getKeyboardCapsMode(), mHandler);
         updateStateAfterInputTransaction(completeInputTransaction);

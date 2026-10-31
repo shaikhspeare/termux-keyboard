@@ -2479,6 +2479,11 @@ public final class InputLogic {
 
     // we used to provide keyboard, settingsValues and keyboardShiftMode, but every time read it from current instance anyway
     void getSuggestedWords(final int inputStyle, final int sequenceNumber, final OnGetSuggestedWordsCallback callback) {
+        if (helium314.keyboard.terminal.TerminalMode.INSTANCE.isActive()) {
+            callback.onGetSuggestedWords(helium314.keyboard.terminal.ShellSuggestions.INSTANCE
+                    .asSuggestedWords(helium314.keyboard.terminal.ShellLine.INSTANCE.value()));
+            return;
+        }
         final Keyboard keyboard = KeyboardSwitcher.getInstance().getKeyboard();
         if (keyboard == null) {
             callback.onGetSuggestedWords(SuggestedWords.getEmptyInstance());

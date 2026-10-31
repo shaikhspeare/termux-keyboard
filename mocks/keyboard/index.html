@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>termux-keyboard — terminal mode mock</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="frame">
+
+  <div class="chrome">
+    <span class="badge">MOCK</span>
+    <span class="chrome-title">terminal mode</span>
+    <button class="chrome-btn" id="openSheet" type="button">Controls</button>
+  </div>
+
+  <section class="terminal" id="terminal" aria-label="Termux terminal">
+    <div class="transcript" id="transcript"></div>
+    <div class="promptline" aria-live="polite">
+      <span class="prompt" id="prompt">~ $</span><span class="buf" id="buf"></span><span class="caret" id="caret"></span>
+    </div>
+  </section>
+
+  <div class="extras" role="toolbar" aria-label="Termux extra keys">
+    <button type="button" data-key="ESC">ESC</button>
+    <button type="button" data-key="/">/</button>
+    <button type="button" data-key="-">-</button>
+    <button type="button" data-key="HOME">HOME</button>
+    <button type="button" data-key="UP">&#8593;</button>
+    <button type="button" data-key="END">END</button>
+    <button type="button" data-key="PGUP">PGUP</button>
+    <button type="button" data-key="CTRL">CTRL</button>
+    <button type="button" data-key="ALT">ALT</button>
+    <button type="button" data-key="TAB">TAB</button>
+    <button type="button" data-key="LEFT">&#8592;</button>
+    <button type="button" data-key="DOWN">&#8595;</button>
+    <button type="button" data-key="RIGHT">&#8594;</button>
+    <button type="button" data-key="PGDN">PGDN</button>
+  </div>
+
+  <div class="ime">
+    <div class="strip" id="strip" role="toolbar" aria-label="Suggestion strip"></div>
+    <div class="keys" id="keys" aria-label="Keyboard"></div>
+  </div>
+
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Review controls</h2>
+      <button class="chrome-btn" id="closeSheet" type="button">Close</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+</div>
+
+<script src="history.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

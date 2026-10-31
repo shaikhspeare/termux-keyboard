@@ -30,6 +30,7 @@ import helium314.keyboard.settings.screens.PersonalDictionaryScreen
 import helium314.keyboard.settings.screens.PreferencesScreen
 import helium314.keyboard.settings.screens.SecondaryLayoutScreen
 import helium314.keyboard.settings.screens.SubtypeScreen
+import helium314.keyboard.settings.screens.TerminalModeScreen
 import helium314.keyboard.settings.screens.TextCorrectionScreen
 import helium314.keyboard.settings.screens.ToolbarScreen
 import helium314.keyboard.settings.screens.gesturedata.GestureDataScreen
@@ -78,6 +79,7 @@ fun SettingsNavHost(
                 onClickLanguage = { navController.navigate(SettingsDestination.Languages) },
                 onClickLayouts = { navController.navigate(SettingsDestination.Layouts) },
                 onClickDictionaries = { navController.navigate(SettingsDestination.Dictionaries) },
+                onClickTerminal = { navController.navigate(SettingsDestination.Terminal) },
                 onClickBack = ::goBack,
             )
         }
@@ -101,6 +103,9 @@ fun SettingsNavHost(
         }
         composable(SettingsDestination.DataReview) {
             ReviewScreen(onClickBack = ::goBack)
+        }
+        composable(SettingsDestination.Terminal) {
+            TerminalModeScreen(onClickBack = ::goBack)
         }
         composable(SettingsDestination.Advanced) {
             AdvancedSettingsScreen(onClickBack = ::goBack)
@@ -153,6 +158,7 @@ object SettingsDestination {
     const val GestureTyping = "gesture_typing"
     const val DataGathering = "data_gathering" // remove when data gathering phase is done (end of 2026 latest)
     const val DataReview = "data_review" // remove when data gathering phase is done (end of 2026 latest)
+    const val Terminal = "terminal"
     const val Advanced = "advanced"
     const val Debug = "debug"
     const val Appearance = "appearance"
