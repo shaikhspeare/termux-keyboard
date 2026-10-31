@@ -10,7 +10,7 @@ Agent: update this file at the end of every work session. Keep it short.
 - [x] Slice 2 — local history (manual import path; Termux helper not yet)
 - [ ] Slice 3 — remote history over SSH
 - [ ] Slice 4 — quality
-- [ ] Slice 5 — CI + Tailscale distribution
+- [x] Slice 5 — CI + Tailscale distribution (helper still missing, see slice 3)
 
 ## Recommendation (Phase 0)
 **Fork HeliBoard (A) and add an IME-side shell suggestion strip; treat shell-side autosuggestion as
@@ -60,6 +60,15 @@ Known limitations (all documented in `docs/spikes.md`):
   layout gives up at < 70 % text scale);
 - Termux's own extra-keys row bypasses the IME, so Tab/arrows can stale the line;
 - there is no Termux-side helper yet, so history is whatever the user imports.
+
+## Slice 5 — distribution
+
+- `.github/workflows/build.yml`: unit tests + APK build on push/PR, artifact upload, release
+  attachment on `v*` tags, optional release signing through repository secrets, debug fallback.
+- `docs/install.md`: Tailscale download, `tailscale serve`, Taildrop, adb, enabling the IME,
+  Android 14 restricted settings, history import, keystore/update rules.
+- The built APK is downloadable over the tailnet today:
+  `https://shayks-macbook-pro.tail0ea196.ts.net:8787/app/build/outputs/apk/debug/HeliBoard_4.3-beta1-debug.apk`
 
 ## Open questions for the user
 1. Phone model + Android version (for the on-device matrix and the Android 14+ sideload

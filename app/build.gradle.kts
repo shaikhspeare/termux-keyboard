@@ -22,8 +22,26 @@ android {
         proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
 
+    signingConfigs {
+        // Sideload signing: set TERMUX_KEYBOARD_KEYSTORE (+ password/alias env vars) to produce an
+        // APK that can be updated in place. Without it, release builds stay unsigned and CI falls
+        // back to the debug build.
+        create("sideload") {
+            val storePath = System.getenv("TERMUX_KEYBOARD_KEYSTORE")
+            if (!storePath.isNullOrEmpty()) {
+                storeFile = rootProject.file(storePath)
+                storePassword = System.getenv("TERMUX_KEYBOARD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("TERMUX_KEYBOARD_KEY_ALIAS")
+                keyPassword = System.getenv("TERMUX_KEYBOARD_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (!System.getenv("TERMUX_KEYBOARD_KEYSTORE").isNullOrEmpty()) {
+                signingConfig = signingConfigs.getByName("sideload")
+            }
             isMinifyEnabled = true
             isShrinkResources = false
             isDebuggable = false

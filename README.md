@@ -9,12 +9,21 @@ Goal: a HeliBoard-based Android keyboard with shell autosuggestions in Termux â€
 - Decisions (ADRs): [docs/decisions.md](docs/decisions.md)
 - Behaviour mock for review: [mocks/keyboard](mocks/keyboard/README.md) â€” served on the tailnet at
   `https://shayks-macbook-pro.tail0ea196.ts.net:8787/mocks/keyboard/`
+- Install guide (sideload, enable, history import, updates): [docs/install.md](docs/install.md)
+- Upstream touchpoints: [docs/upstream-touchpoints.md](docs/upstream-touchpoints.md)
 
 Status: Phase 0 and Phase 1 are complete; Phase 2 (the fork) is gated on sign-off in
 `PROGRESS.md`.
 
 Upstream: https://github.com/HeliBorg/HeliBoard (GPL-3.0). The fork has not been created yet; that
 is part of the spec (after Phase 0).
+
+## CI
+
+`.github/workflows/build.yml` builds on every push and pull request, runs the terminal unit tests,
+uploads the APK as an artifact, and attaches it to a GitHub release for `v*` tags. If
+`TERMUX_KEYBOARD_KEYSTORE_BASE64` + password/alias/key-password secrets are present it signs a
+release build (update-safe); otherwise it falls back to the debug APK and warns.
 
 ## Install (sideload)
 
