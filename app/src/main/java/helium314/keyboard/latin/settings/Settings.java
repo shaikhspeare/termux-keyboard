@@ -87,6 +87,9 @@ public final class Settings implements SharedPreferences.OnSharedPreferenceChang
     public static final String PREF_SHOW_SUGGESTIONS = "show_suggestions";
     public static final String PREF_TERMINAL_MODE = "terminal_mode";
     public static final String PREF_TERMINAL_PACKAGES = "terminal_packages";
+    public static final String PREF_TERMINAL_HELPER_ENABLED = "terminal_helper_enabled";
+    public static final String PREF_TERMINAL_HELPER_PORT = "terminal_helper_port";
+    public static final String PREF_TERMINAL_HELPER_TOKEN = "terminal_helper_token";
     public static final String PREF_ALWAYS_SHOW_SUGGESTIONS = "always_show_suggestions";
     public static final String PREF_ALWAYS_SHOW_SUGGESTIONS_EXCEPT_WEB_TEXT = "always_show_suggestions_except_web_text";
     public static final String PREF_KEY_USE_PERSONALIZED_DICTS = "use_personalized_dicts";

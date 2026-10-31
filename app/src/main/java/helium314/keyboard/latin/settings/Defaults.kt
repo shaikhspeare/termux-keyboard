@@ -73,6 +73,9 @@ object Defaults {
     const val PREF_SHOW_SUGGESTIONS = true
     const val PREF_TERMINAL_MODE = true
     const val PREF_TERMINAL_PACKAGES = "com.termux"
+    const val PREF_TERMINAL_HELPER_ENABLED = false
+    const val PREF_TERMINAL_HELPER_PORT = "8765"
+    const val PREF_TERMINAL_HELPER_TOKEN = ""
     const val PREF_ALWAYS_SHOW_SUGGESTIONS = false
     const val PREF_ALWAYS_SHOW_SUGGESTIONS_EXCEPT_WEB_TEXT = true
     const val PREF_KEY_USE_PERSONALIZED_DICTS = true

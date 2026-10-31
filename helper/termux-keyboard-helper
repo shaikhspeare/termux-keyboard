@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
+"""termux-keyboard-helper — feeds shell history to the Termux Keyboard IME.
+
+Runs inside Termux, binds 127.0.0.1 only, and answers one question:
+"what has been run on this machine / on host X lately?"
+
+Install:  ./install.sh          (copies this file to ~/.local/bin, makes a token)
+Run:      termux-keyboard-helper [--foreground]
+Token:    termux-keyboard-helper --token
+Status:   curl -H "Authorization: Bearer <token>" http://127.0.0.1:8765/v1/status
+
+The IME never sees the raw files: it asks for one host's history text and parses it
+itself, so redaction and ranking stay in one place (the keyboard).
+"""
+
+import json
+import os
+import re
+import secrets
+import subprocess
+import sys
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+VERSION = 1
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "termux-keyboard"
+CONFIG_FILE = CONFIG_DIR / "config.json"
+CACHE_DIR = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "termux-keyboard"
+
+LOCAL_FILES = [
+    "~/.bash_history",
+    "~/.zsh_history",
+    "~/.local/share/fish/fish_history",
+]
+
+REMOTE_DUMP = (
+    'for f in ~/.bash_history ~/.zsh_history ~/.local/share/fish/fish_history; do '
+    '[ -f "$f" ] && cat "$f"; done'
+)
+
+DEFAULT_CONFIG = {
+    "port": 8765,
+    "token": None,          # generated on first run
+    "hosts": [],            # extra ssh aliases, on top of ~/.ssh/config
+    "local_ttl": 30,        # seconds before local history is re-read
+    "remote_ttl": 300,      # seconds before a host is asked again
+    "max_lines": 20000,     # per source, newest kept
+    "ssh_timeout": 8,
+}
+
+
+def load_config():
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    config = dict(DEFAULT_CONFIG)
+    if CONFIG_FILE.exists():
+        try:
+            config.update(json.loads(CONFIG_FILE.read_text()))
+        except Exception as e:
+            print(f"config unreadable ({e}); using defaults", file=sys.stderr)
+    if not config.get("token"):
+        config["token"] = secrets.token_hex(32)
+        CONFIG_FILE.write_text(json.dumps(config, indent=2) + "\n")
+        os.chmod(CONFIG_FILE, 0o600)
+    return config
+
+
+def ssh_hosts(config):
+    hosts = set(config.get("hosts") or [])
+    ssh_config = Path.home() / ".ssh" / "config"
+    if ssh_config.exists():
+        for line in ssh_config.read_text(errors="replace").splitlines():
+            m = re.match(r"\s*Host\s+(.+)", line, re.IGNORECASE)
+            if not m:
+                continue
+            for alias in m.group(1).split():
+                if "*" in alias or "?" in alias or alias.startswith("!"):
+                    continue
+                hosts.add(alias)
+    return sorted(hosts)
+
+
+def tail_lines(text, limit):
+    if limit <= 0:
+        return text
+    lines = text.splitlines()
+    return "\n".join(lines[-limit:])
+
+
+class History:
+    """Per-host cache; local files are cheap, ssh round trips are not."""
+
+    def __init__(self, config):
+        self.config = config
+        self.lock = threading.Lock()
+        self.cache = {}       # host -> (timestamp, text)
+        self.active_host = None
+
+    def hosts(self):
+        return ssh_hosts(self.config)
+
+    def get(self, host):
+        ttl = self.config["local_ttl"] if host == "local" else self.config["remote_ttl"]
+        now = time.time()
+        with self.lock:
+            cached = self.cache.get(host)
+            if cached and now - cached[0] < ttl:
+                return cached[1]
+        text = self._read_local() if host == "local" else self._read_remote(host)
+        text = tail_lines(text, int(self.config["max_lines"]))
+        with self.lock:
+            self.cache[host] = (now, text)
+        return text
+
+    def _read_local(self):
+        chunks = []
+        for pattern in LOCAL_FILES:
+            path = Path(os.path.expanduser(pattern))
+            try:
+                if path.exists() and path.is_file():
+                    chunks.append(path.read_text(errors="replace"))
+            except OSError:
+                pass
+        return "\n".join(chunks)
+
+    def _read_remote(self, host):
+        if not re.fullmatch(r"[A-Za-z0-9_.@:-]+", host):
+            raise ValueError("invalid host")
+        try:
+            result = subprocess.run(
+                ["ssh", "-o", "BatchMode=yes", "-o", f"ConnectTimeout={int(self.config['ssh_timeout'])}",
+                 host, REMOTE_DUMP],
+                capture_output=True, text=True, timeout=float(self.config["ssh_timeout"]) + 4,
+            )
+        except (subprocess.TimeoutExpired, OSError) as e:
+            raise RuntimeError(f"ssh {host}: {e}")
+        if result.returncode != 0:
+            raise RuntimeError(f"ssh {host}: {result.stderr.strip()[:200] or 'failed'}")
+        return result.stdout
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = f"termux-keyboard-helper/{VERSION}"
+    history: History
+    token: str
+
+    def log_message(self, fmt, *args):  # keep the Termux log quiet
+        pass
+
+    def _authorised(self):
+        header = self.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            return False
+        # constant-time compare
+        return secrets.compare_digest(header[7:].strip(), self.token)
+
+    def _send(self, code, body, content_type="application/json"):
+        data = body.encode() if isinstance(body, str) else body
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _error(self, code, message):
+        self._send(code, json.dumps({"ok": False, "error": message}))
+
+    def do_GET(self):
+        if not self._authorised():
+            return self._error(401, "missing or wrong token")
+        url = urlparse(self.path)
+        query = parse_qs(url.query)
+        if url.path == "/v1/status":
+            hosts = self.history.hosts()
+            return self._send(200, json.dumps({
+                "ok": True,
+                "version": VERSION,
+                "activeHost": self.history.active_host,
+                "hosts": hosts,
+                "localBytes": len(self.history.get("local")),
+            }))
+        if url.path == "/v1/history":
+            host = (query.get("host") or ["local"])[0]
+            if host != "local" and host not in self.history.hosts():
+                return self._error(404, f"unknown host {host}")
+            try:
+                text = self.history.get(host)
+            except Exception as e:
+                return self._error(502, str(e))
+            return self._send(200, text, "text/plain; charset=utf-8")
+        return self._error(404, "not found")
+
+    def do_POST(self):
+        if not self._authorised():
+            return self._error(401, "missing or wrong token")
+        url = urlparse(self.path)
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > 4096:
+            return self._error(413, "too large")
+        try:
+            payload = json.loads(self.rfile.read(length) or b"{}")
+        except Exception:
+            return self._error(400, "bad json")
+        if url.path == "/v1/active-host":
+            host = payload.get("host")
+            if host is not None and host != "local" and host not in self.history.hosts():
+                return self._error(404, f"unknown host {host}")
+            self.history.active_host = host
+            return self._send(200, json.dumps({"ok": True, "activeHost": host}))
+        return self._error(404, "not found")
+
+
+def main(argv):
+    config = load_config()
+    if "--token" in argv:
+        print(config["token"])
+        return 0
+    if "--hosts" in argv:
+        print("\n".join(ssh_hosts(config)))
+        return 0
+    if "--selftest" in argv:
+        h = History(config)
+        text = h.get("local")
+        print(f"local history: {len(text)} bytes")
+        for host in h.hosts():
+            try:
+                print(f"{host}: {len(h.get(host))} bytes")
+            except Exception as e:
+                print(f"{host}: {e}")
+        return 0
+
+    tail = "--follow" in argv
+    port = int(os.environ.get("TERMUX_KEYBOARD_PORT", config["port"]))
+    handler = type("BoundHandler", (Handler,), {"history": History(config), "token": config["token"]})
+    server = ThreadingHTTPServer(("127.0.0.1", port), handler)
+    print(f"termux-keyboard-helper v{VERSION} on 127.0.0.1:{port}")
+    if tail:
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        return 0
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

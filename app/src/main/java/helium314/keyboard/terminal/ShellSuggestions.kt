@@ -24,8 +24,12 @@ object ShellSuggestions {
     fun forLine(line: String): List<String> {
         if (line.isEmpty() || !ShellLine.isTrusted) return emptyList()
         val scored = LinkedHashMap<String, Double>()
-        for ((entry, score) in HistoryStore.suggestScored(line, MAX_SUGGESTIONS * 2)) {
+        for ((entry, score) in HelperClient.suggest(line, MAX_SUGGESTIONS * 2)) {
             scored[entry.text] = score
+        }
+        for ((entry, score) in HistoryStore.suggestScored(line, MAX_SUGGESTIONS * 2)) {
+            val existing = scored[entry.text]
+            if (existing == null || score > existing) scored[entry.text] = score
         }
         for (entry in StaticCommands.entries) {
             if (entry.text.length <= line.length || !entry.text.startsWith(line)) continue

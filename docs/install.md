@@ -54,12 +54,28 @@ history import.
 
 ## 4. History
 
-*Import history file* accepts a bash `~/.bash_history`, zsh `~/.zsh_history` or fish
-`fish_history`. Transfer the file however you like (`tailscale file cp`, `adb pull`, a cloud drive)
-and pick it in the dialog. Only parsed, redacted commands are stored.
+Two ways in, and they compose:
 
-Live history from a running Termux session (and per-host history over SSH) needs the Termux-side
-helper, which is slice 3 and not in this build.
+**Automatic (recommended).** Install the helper in Termux once:
+
+```sh
+pkg install python
+git clone https://github.com/shaikhspeare/termux-keyboard && cd termux-keyboard/helper
+./install.sh --with-ssh-wrapper      # prints a token
+nohup termux-keyboard-helper >/dev/null 2>&1 &
+```
+
+Then in the keyboard: Terminal mode → *Fetch history from Termux* on, paste the *Helper token*.
+From then on the keyboard pulls local history (and, when the ssh wrapper is active, the history of
+the host you are connected to) every time the keyboard opens, at most once a minute.
+
+Hosts come from `~/.ssh/config`; `--with-ssh-wrapper` adds a shell function that reports the host
+you ssh into and switches back to local on exit. See [helper/README.md](../helper/README.md).
+
+**Manual.** *Import history file* accepts a bash `~/.bash_history`, zsh `~/.zsh_history` or fish
+`fish_history`; transfer it however you like (`tailscale file cp`, `adb pull`, a cloud drive) and
+pick it in the dialog. Only parsed, redacted commands are stored. Useful when you do not want a
+daemon or the network permission.
 
 ## 5. Updates
 

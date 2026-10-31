@@ -1326,6 +1326,11 @@ New dictionary:
     <string name="terminal_mode_summary">Suggest commands while typing in a terminal app. Termux gives the keyboard no editable text, so the line is tracked from the keys you press.</string>
     <string name="terminal_packages">Terminal packages</string>
     <string name="terminal_packages_summary">Comma separated package names that get shell suggestions</string>
+    <string name="terminal_helper_enabled">Fetch history from Termux</string>
+    <string name="terminal_helper_enabled_summary">Refresh suggestions from termux-keyboard-helper running in Termux (127.0.0.1 only)</string>
+    <string name="terminal_helper_port">Helper port</string>
+    <string name="terminal_helper_token">Helper token</string>
+    <string name="terminal_helper_token_summary">Printed by the helper installer; stored only on this device</string>
     <string name="terminal_import_history">Import history file</string>
     <string name="terminal_import_history_summary">Merge a bash, zsh or fish history file into the suggestions</string>
     <string name="terminal_clear_history">Clear imported history</string>

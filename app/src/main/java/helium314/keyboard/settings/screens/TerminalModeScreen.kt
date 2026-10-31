@@ -29,6 +29,9 @@ fun TerminalModeScreen(
         settings = listOf(
             Settings.PREF_TERMINAL_MODE,
             Settings.PREF_TERMINAL_PACKAGES,
+            Settings.PREF_TERMINAL_HELPER_ENABLED,
+            Settings.PREF_TERMINAL_HELPER_PORT,
+            Settings.PREF_TERMINAL_HELPER_TOKEN,
             SettingsWithoutKey.IMPORT_HISTORY,
             SettingsWithoutKey.CLEAR_HISTORY,
         )
@@ -51,6 +54,29 @@ fun createTerminalSettings(context: Context) = listOf(
         R.string.terminal_packages_summary
     ) {
         TextInputPreference(it, Defaults.PREF_TERMINAL_PACKAGES)
+    },
+    Setting(
+        context,
+        Settings.PREF_TERMINAL_HELPER_ENABLED,
+        R.string.terminal_helper_enabled,
+        R.string.terminal_helper_enabled_summary
+    ) {
+        SwitchPreference(it, Defaults.PREF_TERMINAL_HELPER_ENABLED)
+    },
+    Setting(
+        context,
+        Settings.PREF_TERMINAL_HELPER_PORT,
+        R.string.terminal_helper_port
+    ) {
+        TextInputPreference(it, Defaults.PREF_TERMINAL_HELPER_PORT)
+    },
+    Setting(
+        context,
+        Settings.PREF_TERMINAL_HELPER_TOKEN,
+        R.string.terminal_helper_token,
+        R.string.terminal_helper_token_summary
+    ) {
+        TextInputPreference(it, Defaults.PREF_TERMINAL_HELPER_TOKEN)
     },
     Setting(
         context,

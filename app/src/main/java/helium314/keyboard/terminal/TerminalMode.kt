@@ -32,6 +32,7 @@ object TerminalMode : SharedPreferences.OnSharedPreferenceChangeListener {
         val prefs = context.prefs()
         prefs.registerOnSharedPreferenceChangeListener(this)
         HistoryStore.init(context)
+        HelperClient.init(context)
         reload(prefs)
     }
 
@@ -65,6 +66,7 @@ object TerminalMode : SharedPreferences.OnSharedPreferenceChangeListener {
         val isTextField = (inputType and InputType.TYPE_MASK_CLASS) == InputType.TYPE_CLASS_TEXT
         activePackage = if (appliesTo(packageName) && !isTextField) packageName else null
         ShellLine.reset()
+        if (activePackage != null) HelperClient.onInputStart()
     }
 
     fun onInputFinish() {

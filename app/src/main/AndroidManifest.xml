@@ -9,12 +9,16 @@ SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.READ_USER_DICTIONARY" />
+    <!-- Only used to reach the optional Termux helper on 127.0.0.1. Android gates every socket,
+         including loopback, on this permission; the keyboard has no outbound network code. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application android:label="@string/english_ime_name"
+        android:networkSecurityConfig="@xml/network_security_config"
             android:name="helium314.keyboard.latin.App"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"

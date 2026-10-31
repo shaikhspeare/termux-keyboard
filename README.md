@@ -59,20 +59,23 @@ cannot see those keys — press Enter to resync after using them.
 
 ## History and privacy
 
+- *Settings → Terminal mode → Fetch history from Termux* pulls local history — and the history of
+  the host you are ssh'd into — from `helper/termux-keyboard-helper`, a small loopback daemon you
+  start once in Termux ([helper/README.md](helper/README.md)).
 - *Settings → Terminal mode → Import history file* merges a bash, zsh or fish history file into the
-  suggestions (offline, no permissions).
+  suggestions, for when you do not want a daemon.
 - Only parsed entries are stored, in app-private storage, and lines matching
   `password|passwd|token|secret|api_key|AKIA|BEGIN … PRIVATE KEY` plus lines starting with a space
   are dropped before anything is written.
-- The keyboard declares **no** `INTERNET` permission and contains no telemetry. A Termux-side helper
-  for live/remote history is planned (slice 3); it is the only feature that would need loopback
-  networking and a permission, and it will be opt-in.
+- The keyboard declares `INTERNET` solely to reach that helper on `127.0.0.1` (Android refuses even
+  loopback sockets without it), allows cleartext only for loopback via a network-security config,
+  and contains no telemetry or outbound connections. The helper is opt-in and off by default.
 
 ## Known limitations
 
 - Long commands collapse the strip to one suggestion plus the "…" popup; short ones (e.g. `git …`)
   show three.
-- Static seed list + imported history only — no live shell history yet.
+- History refresh happens when the keyboard opens (at most once a minute), not per keystroke.
 - No terminal toolbar keys yet; Termux's own extra-keys row covers Esc/Tab/Ctrl/arrows.
 
 ## Mock server

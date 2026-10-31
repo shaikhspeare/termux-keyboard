@@ -8,7 +8,7 @@ Agent: update this file at the end of every work session. Keep it short.
 - [x] User sign-off on approach (2026-10-31: "ok build it")
 - [x] Slice 1 — terminal mode + static commands
 - [x] Slice 2 — local history (manual import path; Termux helper not yet)
-- [ ] Slice 3 — remote history over SSH
+- [x] Slice 3 — history helper (local + per-host over SSH), verified against a fake remote
 - [ ] Slice 4 — quality
 - [x] Slice 5 — CI + Tailscale distribution (helper still missing, see slice 3)
 
@@ -73,6 +73,25 @@ Known limitations (all documented in `docs/spikes.md`):
   Android 14 restricted settings, history import, keystore/update rules.
 - The built APK is downloadable over the tailnet today:
   `https://shayks-macbook-pro.tail0ea196.ts.net:8787/app/build/outputs/apk/debug/HeliBoard_4.3-beta1-debug.apk`
+
+## Slice 3 — automatic history (verified on the API 35 emulator)
+
+- `helper/termux-keyboard-helper`: Python 3, stdlib only, binds 127.0.0.1, bearer token, 401 on
+  anything else. Reads `~/.bash_history`, `~/.zsh_history`, fish history; per host runs one
+  `ssh -o BatchMode=yes <alias> 'cat …'` with a timeout; hosts from `~/.ssh/config` + config list.
+  Local cache 30 s, remote 5 min, 20k lines per source, nothing written to disk.
+- `helper/install.sh`: installs to `$PREFIX/bin`, rewrites the shebang for Android, generates the
+  token, optional ssh-wrapper in `~/.bashrc`/`~/.zshrc` that reports the active host.
+- IME: `HelperClient` (HTTP + token, 60 s throttle, background thread), new prefs (enabled, port,
+  token), `INTERNET` permission scoped by a network-security config that allows cleartext only on
+  loopback. Suggestions merge helper history + imported history + static on one scale.
+- Verified: helper installed and running in Termux, `/v1/status` and `/v1/history?host=local`
+  answer with the token and 401 without it; the IME logged "loaded 4 commands for local" and
+  suggested `rg --files | head` after `rg `. With `POST /v1/active-host {"host":"web1"}` and a fake
+  `ssh` returning that host's history, the IME logged "loaded 3 commands for web1" and suggested
+  `systemctl status nginx` after `systemctl status `.
+- Not verified: a real ssh host (no remote available here), and the `--with-ssh-wrapper` function
+  against a real interactive ssh session.
 
 ## Open questions for the user
 1. Phone model + Android version (for the on-device matrix and the Android 14+ sideload
